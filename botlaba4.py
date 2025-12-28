@@ -8,13 +8,13 @@ bot = telebot.TeleBot(TOKEN)
 
 # Получение курса валют
 def get_rate(currency):
-    url = "https://api.exchangerate.host/latest"
-    params = {
-        "base": currency,
-        "symbols": "RUB"
-    }
+    url = f"https://open.er-api.com/v6/latest/{currency}"
     response = requests.get(url)
     data = response.json()
+
+    if "rates" not in data:
+        return None
+
     return data["rates"]["RUB"]
 
 # Команда /start
@@ -40,3 +40,4 @@ def currency_handler(message):
 
 # Запуск бота
 bot.polling(none_stop=True)
+
