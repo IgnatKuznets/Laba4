@@ -6,16 +6,22 @@ TOKEN = "8096000440:AAFyTBVnETPxVEplM3VUQv9slpyBK-fZLMI"
 
 bot = telebot.TeleBot(TOKEN)
 
-# Получение курса валют
 def get_rate(currency):
-    url = f"https://open.er-api.com/v6/latest/{currency}"
-    response = requests.get(url)
-    data = response.json()
+    try:
+        url = f"https://open.er-api.com/v6/latest/{currency}"
+        response = requests.get(url, timeout=5)
+        data = response.json()
 
-    if "rates" not in data:
-        return None
+        if "rates" not in data:
+            return None
 
-    return data["rates"]["RUB"]
+        return data["rates"]["RUB"]
+
+    except requests.exceptions.RequestException:
+        return "NETWORK_ERROR"
+
+    except Exception:
+        return "UNKNOWN_ERROR"
 
 
 @bot.message_handler(commands=["start"])
@@ -34,16 +40,31 @@ def currency_handler(message):
     currency = message.text
     rate = get_rate(currency)
 
-    if rate is None:
-        bot.send_message(message.chat.id, "Ошибка получения курса 😢")
+    if rate == "NETWORK_ERROR":
+        bot.send_message(message.chat.id, " Ошибка сети. Попробуйте позже.")
+
+    elif rate == "UNKNOWN_ERROR":
+        bot.send_message(message.chat.id, " Произошла непредвиденная ошибка.")
+
+    elif rate is None:
+        bot.send_message(message.chat.id, " Не удалось получить курс валюты.")
+
     else:
         bot.send_message(
             message.chat.id,
-            f"💱 Курс {currency} к RUB:\n1 {currency} = {rate:.2f} ₽"
+            f" Курс {currency} к RUB:\n1 {currency} = {rate:.2f} ₽"
         )
+
+@bot.message_handler(func=lambda message: True)
+def unknown_message(message):
+    bot.send_message(
+        message.chat.id,
+        " Я вас не понял.\nПожалуйста, выберите валюту с кнопок ниже."
+    )
 
 
 # Запуск бота
 bot.polling(none_stop=True)
+
 
 
